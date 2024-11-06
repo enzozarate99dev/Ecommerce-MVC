@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using SistemaVentas.AplicacionWeb.Models.ViewModels;
 using SistemaVentas.AplicacionWeb.Utilidades.Response;
 using SistemaVentas.BLL.Implementacion;
@@ -51,11 +52,17 @@ namespace SistemaVentas.AplicacionWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> RegistrarVenta([FromBody] VMVenta modelo)
         {
+           
+
+            if (modelo == null)
+            {
+                return BadRequest("El modelo de venta es nulo");
+            }
             GenericResponse<VMVenta> gResponse = new GenericResponse<VMVenta>();
 
             try
             {
-                
+                modelo.IdUsuario = 1;
 
                 Venta ventaCreada = await _ventaService.Registrar(_mapper.Map<Venta>(modelo));
 

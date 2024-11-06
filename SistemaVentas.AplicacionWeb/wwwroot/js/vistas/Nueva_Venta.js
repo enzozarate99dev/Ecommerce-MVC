@@ -151,7 +151,7 @@ $("#cboBuscarProducto").on("select2:select", function (e) {
 
 function mostrarProducto_Precios() {
 
-    let total = 0;
+    let Total = 0;
     let iva = 0;
     let subtotal = 0;
     let porcentaje = valorImpuesto / 100;
@@ -160,7 +160,7 @@ function mostrarProducto_Precios() {
 
     productosParaVenta.forEach((i) => {
 
-        total += parseFloat(i.total)
+        Total += parseFloat(i.total)
 
         $("#tbProducto tbody").append(
             $("<td>").append(
@@ -177,12 +177,12 @@ function mostrarProducto_Precios() {
 
     })
 
-    subtotal = total / (1 + porcentaje)
-    iva = total - subtotal
+    subtotal = Total / (1 + porcentaje)
+    iva = Total - subtotal
 
     $("#txtSubTotal").val(subtotal.toFixed(2))
     $("#txtIVA").val(iva.toFixed(2))
-    $("#txtTotal").val(total.toFixed(2))
+    $("#txtTotal").val(Total.toFixed(2))
 
 }
 
@@ -195,50 +195,68 @@ $(document).on("click", "button.btn-eliminar", function () {
     mostrarProducto_Precios();
 })
 $("#btnTerminarVenta").click(function () {
-    if (productosParaVenta < 1) {
+    if (productosParaVenta.length < 1) {
         toastr.warning("", "Debe ingresar productos ")
         return;
     }
 
-    const vmDetalleVenta = productosParaVenta
+    const vmDetalleVenta = productosParaVenta;
     const venta = {
-        idTipoDocumentoVenta: $("#cboTipoDocumentoVenta").val(),
+        idTipoDocumentoVenta: 1,
         documentoCliente: $("#txtDocumentoCliente").val(),
         nombreCliente: $("#txtNombreCliente").val(),
-        subTotal: $("#txtSubTotal").val(),
-        impuestoTotal: $("#txtIVA").val(),
-        total: $("#txtTotal").val(),
-        detalleVenta : vmDetalleVenta
+        subTotal: Number($("#txtSubTotal").val().replace(',', '.')),
+        impuestoTotal: Number($("#txtIVA").val().replace(',', '.')),
+        Total: Number($("#txtTotal").val().replace(',', '.')),
+        detalleVenta: vmDetalleVenta
     }
+
+    // Debugging - Ver datos antes de enviar
+    console.log("Datos de venta antes de enviar:", venta);
+    console.log("JSON a enviar:", JSON.stringify(venta));
 
     $("#btnTerminarVenta").LoadingOverlay("show");
 
-    fetch("/Venta/RegistrarVenta", {
+    // Asegurarnos de que la URL es correcta
+    const url = "/Venta/RegistrarVenta";
+    console.log("URL de envío:", url);
+
+    fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json; charset=utf-8" },
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        },
         body: JSON.stringify(venta)
     })
-        .then(res => {
+        .then(response => {
             $("#btnTerminarVenta").LoadingOverlay("hide");
+            console.log("Status de la respuesta:", response.status);
+            console.log("Headers de la respuesta:", response.headers);
 
-            return res.ok ? res.json() : Promise.reject(res)
+            if (!response.ok) {
+                return response.text().then(text => {
+                    console.log("Error response body:", text);
+                    throw new Error(text);
+                });
+            }
+            return response.json();
         })
-
         .then(resJson => {
-            if (resJason.estado) {
-                productosParaVenta = []
-                mostrarProducto_Precios()
-
-                $("#txtDocumentoCliente")
-                $("#txtNombreCliente")
-                $("#cboTipoDocumentoVenta").val($("#cboTipoDocumentoVenta option:first").val())
-
-                swal("¡Registrado!", `Numero Venta : ${resJson.objeto.nroVenta}`, "success")
-
+            console.log("Respuesta exitosa:", resJson);
+            if (resJson.estado) {
+                productosParaVenta = [];
+                mostrarProducto_Precios();
+                $("#txtDocumentoCliente").val("");
+                $("#txtNombreCliente").val("");
+                swal("¡Registrado!", `Numero Venta : ${resJson.objeto.numeroVenta}`, "success");
             } else {
-                swal("Ocurió un error", "No se pudo registrar la operación", "error")
-
+                swal("Ocurrió un error", resJson.mensaje || "No se pudo registrar la operación", "error");
             }
         })
-
-})
+        .catch(error => {
+            $("#btnTerminarVenta").LoadingOverlay("hide");
+            console.error("Error completo:", error);
+            swal("Error", "No se pudo procesar la venta", "error");
+        });
+});
