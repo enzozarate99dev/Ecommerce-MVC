@@ -89,6 +89,8 @@ public partial class DbventaContext : DbContext
         {
             entity.HasKey(e => e.IdDetalleVenta).HasName("PK__DetalleV__BFE2843FD000926C");
 
+            entity.ToTable("DetalleVenta");
+
             entity.Property(e => e.IdDetalleVenta).HasColumnName("idDetalleVenta");
             entity.Property(e => e.Cantidad).HasColumnName("cantidad");
             entity.Property(e => e.CategoriaProducto)
@@ -363,6 +365,9 @@ public partial class DbventaContext : DbContext
         modelBuilder.Entity<Venta>(entity =>
         {
             entity.HasKey(e => e.IdVenta).HasName("PK__Venta__077D5614E7DDFD73");
+
+            entity.ToTable("Venta");
+
 
             entity.Property(e => e.IdVenta).HasColumnName("idVenta");
             entity.Property(e => e.DocumentoCliente)
