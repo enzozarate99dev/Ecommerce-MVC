@@ -1,5 +1,9 @@
+using DinkToPdf;
+using DinkToPdf.Contracts;
 using SistemaVentas.AplicacionWeb.Utilidades.Automapper;
+using SistemaVentas.AplicacionWeb.Utilidades.Extensiones;
 using SistemaVentas.IOC;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +12,10 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.InyectarDependencia(builder.Configuration);
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+
+var context = new CustomAssemblyLoadContext();
+context.LoadUnmanagedLibrary(Path.Combine(Directory.GetCurrentDirectory(), "Utilidades/LibreriaPDF/libwkhtmltox.dll"));
+builder.Services.AddSingleton(typeof(IConverter), new SynchronizedConverter(new PdfTools()));
 
 var app = builder.Build();
 

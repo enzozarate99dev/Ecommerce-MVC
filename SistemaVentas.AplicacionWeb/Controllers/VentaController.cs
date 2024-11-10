@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using DinkToPdf;
+using DinkToPdf.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using SistemaVentas.AplicacionWeb.Models.ViewModels;
@@ -14,12 +16,14 @@ namespace SistemaVentas.AplicacionWeb.Controllers
         private readonly IMapper _mapper;
         private readonly ITipoDocumentoVentaService _tipoDocumentoVentaService;
         private readonly IVentaService _ventaService;
+        private readonly IConverter _converter;
 
-        public VentaController(IMapper mapper, ITipoDocumentoVentaService tipoDocumentoVentaService, IVentaService ventaService)
+        public VentaController(IMapper mapper, ITipoDocumentoVentaService tipoDocumentoVentaService, IVentaService ventaService, IConverter converter)
         {
             _mapper = mapper;
             _tipoDocumentoVentaService = tipoDocumentoVentaService;
             _ventaService = ventaService;
+            _converter = converter;
         }
 
         public IActionResult NuevaVenta()
@@ -46,7 +50,6 @@ namespace SistemaVentas.AplicacionWeb.Controllers
             var lista = await _ventaService.ObtenerProductos(busqueda);
             List<VMProducto> vmListaProductos = _mapper.Map<List<VMProducto>>(lista);
 
-           // return Json(new { data = vmListaProductos });
             return StatusCode(StatusCodes.Status200OK, vmListaProductos);
         }
         [HttpPost]
@@ -85,7 +88,33 @@ namespace SistemaVentas.AplicacionWeb.Controllers
             var lista = await _ventaService.Historial(nroVenta,fechaInicio,fechaFin);
             List<VMVenta> vmHistorialVenta = _mapper.Map<List<VMVenta>>(lista);
 
-            return Json(new { data = vmHistorialVenta });
+            return StatusCode(StatusCodes.Status200OK, vmHistorialVenta);
+
+        }
+
+        public IActionResult MostrarPDFVenta(string nroVenta)
+        {
+            string urlPlantillaVista = $"{this.Request.Scheme}://{this.Request.Host}/Plantilla/PDFVenta?nroVenta={nroVenta}";
+
+            var pdf = new HtmlToPdfDocument()
+            {
+                GlobalSettings = new GlobalSettings()
+                {
+                    PaperSize = PaperKind.A4,
+                    Orientation = Orientation.Portrait,
+                },
+                Objects =
+                {
+                    new ObjectSettings()
+                    {
+                        Page = urlPlantillaVista
+                    }
+                }
+            };
+
+            var archivo = _converter.Convert(pdf);
+            return File(archivo, "application/pdf");
+            
         }
     }
 }
